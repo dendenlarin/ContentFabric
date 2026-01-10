@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { GeneratedPrompt, GeneratedPromptDocument } from './schemas/generated-prompt.schema';
@@ -30,6 +30,13 @@ export class GeneratedPromptsService {
   async generate(dto: GeneratePromptsDto): Promise<GenerateResult> {
     const templates = await this.promptTemplatesService.findByIds(dto.templateIds);
 
+    // Проверяем, что все запрошенные шаблоны найдены
+    if (templates.length !== dto.templateIds.length) {
+      const foundIds = templates.map((t) => t._id.toString());
+      const missingIds = dto.templateIds.filter((id) => !foundIds.includes(id));
+      throw new NotFoundException(`Шаблоны не найдены: ${missingIds.join(', ')}`);
+    }
+
     let generated = 0;
     let skipped = 0;
     const prompts: GeneratedPromptDocument[] = [];
@@ -42,11 +49,21 @@ export class GeneratedPromptsService {
       // Извлекаем плейсхолдеры из шаблона
       const placeholders = this.promptTemplatesService.extractPlaceholders(template.template);
 
+      // Проверяем, что все плейсхолдеры имеют соответствующие параметры
+      const parameterNames = parameters.map((p) => p.name);
+      const missingPlaceholders = placeholders.filter((ph) => !parameterNames.includes(ph));
+
+      if (missingPlaceholders.length > 0) {
+        throw new BadRequestException(
+          `Шаблон "${template.name}" содержит плейсхолдеры без параметров: ${missingPlaceholders.join(', ')}`,
+        );
+      }
+
       // Фильтруем только используемые параметры
       const usedParameters = parameters.filter((p) => placeholders.includes(p.name));
 
-      if (usedParameters.length === 0) {
-        // Нет параметров - создаём один промпт без подстановок
+      if (usedParameters.length === 0 && placeholders.length === 0) {
+        // Нет плейсхолдеров в шаблоне - создаём один промпт без подстановок
         const result = await this.createPromptIfNotExists(
           template._id.toString(),
           template.template,
