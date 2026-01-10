@@ -8,6 +8,8 @@ interface CreateResultDto {
   promptId: string;
   promptText: string;
   url: string;
+  status?: 'success' | 'error';
+  error?: string;
 }
 
 @Injectable()
@@ -23,6 +25,8 @@ export class GenerationResultsService {
       promptId: new Types.ObjectId(dto.promptId),
       promptText: dto.promptText,
       url: dto.url,
+      status: dto.status ?? 'success',
+      error: dto.error,
     });
   }
 

@@ -10,6 +10,7 @@
     "build": "turbo build",
     "build:shared": "turbo build --filter=@content-fabric/shared",
     "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "clean": "turbo clean && rm -rf node_modules"
