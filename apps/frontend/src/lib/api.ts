@@ -47,7 +47,19 @@ export async function apiFetch<T>(
     throw new Error(error || `HTTP error! status: ${response.status}`);
   }
 
-  return response.json();
+  // Обработка пустых ответов (DELETE и другие запросы без контента)
+  const contentLength = response.headers.get('content-length');
+  if (contentLength === '0' || response.status === 204) {
+    return undefined as T;
+  }
+
+  // Проверяем наличие тела ответа перед парсингом JSON
+  const text = await response.text();
+  if (!text) {
+    return undefined as T;
+  }
+
+  return JSON.parse(text) as T;
 }
 
 // === API функции для параметров ===
@@ -154,6 +166,16 @@ export async function startGeneration(id: string): Promise<Generation> {
   });
 }
 
+// Интерфейс для пагинированного ответа результатов генерации
+interface PaginatedGenerationResults {
+  items: GenerationResult[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export async function getGenerationResults(generationId: string): Promise<GenerationResult[]> {
-  return apiFetch<GenerationResult[]>(`/generation-results?generationId=${generationId}`);
+  const response = await apiFetch<PaginatedGenerationResults>(`/generation-results?generationId=${generationId}`);
+  return response.items;
 }

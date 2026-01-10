@@ -234,7 +234,11 @@ export default function TemplatesPage() {
           template: templateText,
           embeddedParameters,
         });
-        setSuccess('Шаблон обновлён');
+
+        // Перегенерируем варианты после обновления параметров
+        const result = await generatePrompts(selectedTemplate.id);
+        setGeneratedPrompts(result.prompts);
+        setSuccess(`Шаблон обновлён. Сгенерировано ${result.generated} вариантов`);
       } else {
         // Создаём новый шаблон
         await createPromptTemplate({
