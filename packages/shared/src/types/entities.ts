@@ -76,6 +76,8 @@ export interface IGenerationResult {
   promptId: string;
   promptText: string;           // Денормализация для удобства
   url: string;                  // Путь к файлу
+  status: 'success' | 'error';  // Статус результата генерации
+  error?: string;               // Текст ошибки (если status === 'error')
   createdAt: Date;
 }
 
@@ -134,5 +136,7 @@ export interface GenerationResultResponse {
   promptId: string;
   promptText: string;
   url: string;
+  status: 'success' | 'error';  // Статус результата генерации
+  error?: string;               // Текст ошибки (если status === 'error')
   createdAt: string;
 }

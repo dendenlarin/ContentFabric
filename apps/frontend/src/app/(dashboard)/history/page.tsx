@@ -238,7 +238,7 @@ export default function HistoryPage() {
                               </Badge>
                             </div>
                             <p className="text-sm text-foreground whitespace-pre-wrap">
-                              {result.result}
+                              {result.promptText}
                             </p>
                           </div>
                         ))}

@@ -1,0 +1,38 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [".env*"],
+  "globalEnv": [
+    "NODE_ENV",
+    "PORT",
+    "MONGODB_URI",
+    "REDIS_HOST",
+    "REDIS_PORT"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
+      "cache": true
+    },
+    "dev": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "inputs": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+      "outputs": [],
+      "cache": true
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$"],
+      "outputs": [],
+      "cache": true
+    },
+    "clean": {
+      "cache": false
+    }
+  }
+}

@@ -12,7 +12,7 @@
   "dependencies": {
     "@bull-board/api": "^6.16.2",
     "@bull-board/express": "^6.16.2",
-    "@content-fabric/shared": "*",
+    "@content-fabric/shared": "workspace:*",
     "@nestjs/bullmq": "^10.0.1",
     "@nestjs/common": "^10.3.0",
     "@nestjs/config": "^3.2.0",

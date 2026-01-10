@@ -1,21 +1,25 @@
 # Development Dockerfile для Next.js Frontend
-# Контекст сборки: корень monorepo (для npm workspaces)
+# Контекст сборки: корень monorepo (для pnpm workspaces)
 
 FROM node:20-alpine
 
+# Включаем corepack для pnpm
+RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+
 WORKDIR /app
 
-# Копируем файлы конфигурации для npm workspaces
-COPY package.json package-lock.json* ./
+# Копируем конфигурацию workspaces
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY .npmrc* ./
 COPY apps/frontend/package.json ./apps/frontend/
 COPY packages/shared/package.json ./packages/shared/
 
 # Устанавливаем все зависимости
-RUN npm install
+RUN pnpm install --frozen-lockfile
 
 # Копируем и собираем shared пакет
 COPY packages/shared/ ./packages/shared/
-RUN npm run build --workspace=packages/shared
+RUN pnpm --filter @content-fabric/shared build
 
 # Копируем исходники frontend (будут перезаписаны volumes при запуске)
 COPY apps/frontend/ ./apps/frontend/
@@ -23,4 +27,4 @@ COPY apps/frontend/ ./apps/frontend/
 EXPOSE 3000
 
 # Запуск в development режиме с hot-reload
-CMD ["npm", "run", "dev", "--workspace=apps/frontend"]
+CMD ["pnpm", "--filter", "@content-fabric/frontend", "dev"]
