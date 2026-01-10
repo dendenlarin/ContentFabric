@@ -1,21 +1,25 @@
 # Development Dockerfile для NestJS Backend
-# Контекст сборки: корень monorepo (для npm workspaces)
+# Контекст сборки: корень monorepo (для pnpm workspaces)
 
 FROM node:20-alpine
 
+# Включаем corepack для pnpm
+RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+
 WORKDIR /app
 
-# Копируем файлы конфигурации для npm workspaces
-COPY package.json package-lock.json* ./
+# Копируем конфигурацию workspaces
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY .npmrc* ./
 COPY apps/backend/package.json ./apps/backend/
 COPY packages/shared/package.json ./packages/shared/
 
-# Устанавливаем все зависимости (включая devDependencies для hot-reload)
-RUN npm install
+# Устанавливаем все зависимости
+RUN pnpm install --frozen-lockfile
 
 # Копируем и собираем shared пакет
 COPY packages/shared/ ./packages/shared/
-RUN npm run build --workspace=packages/shared
+RUN pnpm --filter @content-fabric/shared build
 
 # Копируем исходники backend (будут перезаписаны volumes при запуске)
 COPY apps/backend/ ./apps/backend/
@@ -23,4 +27,4 @@ COPY apps/backend/ ./apps/backend/
 EXPOSE 3001
 
 # Запуск в development режиме с hot-reload
-CMD ["npm", "run", "dev", "--workspace=apps/backend"]
+CMD ["pnpm", "--filter", "@content-fabric/backend", "dev"]

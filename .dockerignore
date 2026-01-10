@@ -1,6 +1,12 @@
 # Node modules
 **/node_modules
 
+# pnpm
+.pnpm-store
+
+# Turborepo cache
+.turbo
+
 # Build outputs
 **/dist
 **/.next
@@ -23,6 +29,7 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+pnpm-debug.log*
 
 # Environment (кроме примеров)
 .env

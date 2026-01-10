@@ -2,21 +2,21 @@
   "name": "content-fabric",
   "version": "0.1.0",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+  "packageManager": "pnpm@9.15.0",
   "scripts": {
-    "dev": "npm run dev --workspace=apps/backend & npm run dev --workspace=apps/frontend",
-    "dev:backend": "npm run dev --workspace=apps/backend",
-    "dev:frontend": "npm run dev --workspace=apps/frontend",
-    "build": "npm run build --workspaces",
-    "build:shared": "npm run build --workspace=packages/shared",
-    "lint": "npm run lint --workspaces",
+    "dev": "turbo dev",
+    "dev:backend": "turbo dev --filter=@content-fabric/backend",
+    "dev:frontend": "turbo dev --filter=@content-fabric/frontend",
+    "build": "turbo build",
+    "build:shared": "turbo build --filter=@content-fabric/shared",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
     "docker:up": "docker compose up -d",
-    "docker:down": "docker compose down"
+    "docker:down": "docker compose down",
+    "clean": "turbo clean && rm -rf node_modules"
   },
   "devDependencies": {
+    "turbo": "^2.3.0",
     "typescript": "^5.3.3"
   }
 }

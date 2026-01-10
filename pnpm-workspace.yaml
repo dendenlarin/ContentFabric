@@ -1,0 +1,5 @@
+# pnpm workspace configuration
+# Определяет пакеты в монорепо
+packages:
+  - 'apps/*'
+  - 'packages/*'

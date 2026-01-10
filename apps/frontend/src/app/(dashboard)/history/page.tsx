@@ -232,13 +232,13 @@ export default function HistoryPage() {
                                 Результат #{index + 1}
                               </span>
                               <Badge
-                                variant={result.status === 'success' ? 'success' : 'error'}
+                                variant={result.status === 'error' ? 'error' : 'success'}
                               >
-                                {result.status === 'success' ? 'Успех' : 'Ошибка'}
+                                {result.status === 'error' ? 'Ошибка' : 'Успех'}
                               </Badge>
                             </div>
                             <p className="text-sm text-foreground whitespace-pre-wrap">
-                              {result.result}
+                              {result.promptText}
                             </p>
                           </div>
                         ))}

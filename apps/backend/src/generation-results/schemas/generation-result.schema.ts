@@ -31,6 +31,12 @@ export class GenerationResult {
 
   @Prop({ required: true })
   url: string;
+
+  @Prop({ required: true, enum: ['success', 'error'], default: 'success' })
+  status: 'success' | 'error';
+
+  @Prop({ required: false })
+  error?: string;
 }
 
 export const GenerationResultSchema = SchemaFactory.createForClass(GenerationResult);
