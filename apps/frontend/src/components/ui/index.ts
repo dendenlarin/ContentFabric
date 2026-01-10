@@ -19,5 +19,7 @@ export {
 export { MultiSelect } from './MultiSelect';
 export { Checkbox } from './Checkbox';
 export { Badge } from './Badge';
+export { Alert } from './Alert';
+export { StatusBadge } from './StatusBadge';
 export { ProgressBar } from './ProgressBar';
-export { Popover, PopoverTrigger, PopoverContent } from './popover';
+export { Popover, PopoverTrigger, PopoverContent } from './Popover';

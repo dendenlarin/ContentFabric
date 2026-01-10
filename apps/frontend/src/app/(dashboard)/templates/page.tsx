@@ -1,23 +1,22 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Save, Sparkles, AlertCircle } from 'lucide-react';
+import { Save, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import { TemplateList, PromptEditor } from '@/components/templates';
-import { Button, Input } from '@/components/ui';
+import { Button, Input, Alert } from '@/components/ui';
 import {
   PromptTemplate,
   Parameter,
+  GeneratedPrompt,
   getPromptTemplates,
   createPromptTemplate,
+  updatePromptTemplate,
   deletePromptTemplate,
   generatePrompts,
   getParameters,
+  getGeneratedPrompts,
 } from '@/lib/api';
-import {
-  extractParameterNames,
-  areAllParametersDefined,
-  countCombinations,
-} from '@/lib/template-utils';
+import { extractParameterNames } from '@/lib/template-utils';
 
 /**
  * Страница управления шаблонами промптов
@@ -38,9 +37,16 @@ export default function TemplatesPage() {
 
   // Состояние операций
   const [saving, setSaving] = useState(false);
-  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // Состояние сгенерированных промптов
+  const [generatedPrompts, setGeneratedPrompts] = useState<GeneratedPrompt[]>([]);
+  const [loadingPrompts, setLoadingPrompts] = useState(false);
+
+  // Пагинация промптов
+  const [promptsPage, setPromptsPage] = useState(0);
+  const PROMPTS_PER_PAGE = 10;
 
   // Сброс формы редактирования
   const resetForm = useCallback((options: {
@@ -58,7 +64,10 @@ export default function TemplatesPage() {
       setTemplateText(template.template);
       const params: Record<string, string[]> = {};
       (template.parameters || []).forEach((p) => {
-        params[p.name] = [...p.values];
+        // Защитная проверка: параметр должен иметь name и values
+        if (p && p.name && Array.isArray(p.values)) {
+          params[p.name] = [...p.values];
+        }
       });
       setParameters(params);
     } else {
@@ -128,15 +137,63 @@ export default function TemplatesPage() {
     });
   }, [templateText, globalParameters]);
 
-  // Выбор шаблона для редактирования
-  const handleSelectTemplate = (template: PromptTemplate) => {
+  // Выбор шаблона для редактирования с автогенерацией
+  const handleSelectTemplate = async (template: PromptTemplate) => {
     resetForm({ template });
+    setGeneratedPrompts([]);
+    setPromptsPage(0);
+
+    // Загружаем существующие промпты
+    setLoadingPrompts(true);
+    try {
+      const prompts = await getGeneratedPrompts(template.id);
+
+      // Если промптов нет — автоматически генерируем
+      if (prompts.length === 0) {
+        const result = await generatePrompts(template.id);
+        setGeneratedPrompts(result.prompts);
+        setSuccess(`Автоматически сгенерировано ${result.generated} промптов`);
+      } else {
+        setGeneratedPrompts(prompts);
+      }
+    } catch (err) {
+      console.error('Ошибка загрузки/генерации промптов:', err);
+    } finally {
+      setLoadingPrompts(false);
+    }
   };
 
   // Создание нового шаблона
   const handleCreateNew = () => {
     resetForm({ isCreating: true });
+    setGeneratedPrompts([]);
   };
+
+  // Проверка наличия изменений
+  const hasChanges = useCallback(() => {
+    if (isCreating) {
+      // Для нового шаблона - есть изменения если есть контент
+      return templateName.trim() !== '' || templateText.trim() !== '';
+    }
+    if (!selectedTemplate) return false;
+
+    // Проверяем изменения названия и текста
+    if (templateName !== selectedTemplate.name) return true;
+    if (templateText !== selectedTemplate.template) return true;
+
+    // Проверяем изменения параметров
+    const currentParamNames = extractParameterNames(templateText);
+    for (const name of currentParamNames) {
+      const originalParam = selectedTemplate.parameters?.find(p => p.name === name);
+      const currentValues = parameters[name] || [];
+      const originalValues = originalParam?.values || [];
+      if (JSON.stringify(currentValues.sort()) !== JSON.stringify(originalValues.sort())) {
+        return true;
+      }
+    }
+
+    return false;
+  }, [isCreating, selectedTemplate, templateName, templateText, parameters]);
 
   // Сохранение шаблона
   const handleSave = async () => {
@@ -170,13 +227,24 @@ export default function TemplatesPage() {
         values: parameters[name] || [],
       }));
 
-      await createPromptTemplate({
-        name: templateName,
-        template: templateText,
-        embeddedParameters,
-      });
+      if (selectedTemplate && !isCreating) {
+        // Обновляем существующий шаблон
+        await updatePromptTemplate(selectedTemplate.id, {
+          name: templateName,
+          template: templateText,
+          embeddedParameters,
+        });
+        setSuccess('Шаблон обновлён');
+      } else {
+        // Создаём новый шаблон
+        await createPromptTemplate({
+          name: templateName,
+          template: templateText,
+          embeddedParameters,
+        });
+        setSuccess('Шаблон создан');
+      }
 
-      setSuccess('Шаблон сохранён');
       await loadTemplates();
 
       // Если создавали новый - сбрасываем форму
@@ -188,28 +256,6 @@ export default function TemplatesPage() {
       console.error(err);
     } finally {
       setSaving(false);
-    }
-  };
-
-  // Генерация промптов
-  const handleGenerate = async () => {
-    if (!selectedTemplate) return;
-
-    if (!areAllParametersDefined(templateText, parameters)) {
-      setError('Сначала определите все параметры');
-      return;
-    }
-
-    try {
-      setGenerating(true);
-      setError(null);
-      const result = await generatePrompts(selectedTemplate.id);
-      setSuccess(`Сгенерировано ${result.generated} промптов`);
-    } catch (err) {
-      setError('Ошибка генерации промптов');
-      console.error(err);
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -239,10 +285,12 @@ export default function TemplatesPage() {
     resetForm({ template: duplicatedTemplate, isCreating: true });
   };
 
-  // Статистика для кнопки генерации
-  const paramNames = extractParameterNames(templateText);
-  const allDefined = areAllParametersDefined(templateText, parameters);
-  const combinationsCount = allDefined ? countCombinations(parameters, paramNames) : 0;
+  // Пагинированные промпты
+  const totalPages = Math.ceil(generatedPrompts.length / PROMPTS_PER_PAGE);
+  const paginatedPrompts = generatedPrompts.slice(
+    promptsPage * PROMPTS_PER_PAGE,
+    (promptsPage + 1) * PROMPTS_PER_PAGE
+  );
 
   return (
     <div className="h-[calc(100vh-64px)] flex">
@@ -275,28 +323,15 @@ export default function TemplatesPage() {
 
             {/* Сообщения */}
             {error && (
-              <div className="flex items-center gap-2 p-4 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive">
-                <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                <span>{error}</span>
-                <button
-                  onClick={() => setError(null)}
-                  className="ml-auto text-destructive/70 hover:text-destructive"
-                >
-                  ×
-                </button>
-              </div>
+              <Alert variant="error" onClose={() => setError(null)}>
+                {error}
+              </Alert>
             )}
 
             {success && (
-              <div className="flex items-center gap-2 p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700">
-                <span>{success}</span>
-                <button
-                  onClick={() => setSuccess(null)}
-                  className="ml-auto text-emerald-500 hover:text-emerald-700"
-                >
-                  ×
-                </button>
-              </div>
+              <Alert variant="success" onClose={() => setSuccess(null)}>
+                {success}
+              </Alert>
             )}
 
             {/* Название */}
@@ -327,30 +362,75 @@ export default function TemplatesPage() {
               <Button
                 onClick={handleSave}
                 loading={saving}
+                disabled={!hasChanges()}
                 className="flex items-center gap-2"
               >
                 <Save className="w-4 h-4" />
                 Сохранить
               </Button>
+            </div>
 
-              {selectedTemplate && (
-                <Button
-                  variant="secondary"
-                  onClick={handleGenerate}
-                  loading={generating}
-                  disabled={!allDefined || paramNames.length === 0}
-                  className="flex items-center gap-2"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  Генерировать
-                  {allDefined && combinationsCount > 0 && (
-                    <span className="ml-1 px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
-                      {combinationsCount}
+            {/* Сгенерированные промпты */}
+            {selectedTemplate && (
+              <div className="pt-6 border-t border-border">
+                <h3 className="text-lg font-semibold mb-4">
+                  Варианты промптов
+                  {generatedPrompts.length > 0 && (
+                    <span className="ml-2 text-sm font-normal text-muted-foreground">
+                      ({generatedPrompts.length})
                     </span>
                   )}
-                </Button>
-              )}
-            </div>
+                </h3>
+
+                {loadingPrompts ? (
+                  <div className="text-muted-foreground">Загрузка...</div>
+                ) : generatedPrompts.length === 0 ? (
+                  <div className="text-muted-foreground">
+                    Нет вариантов промптов
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      {paginatedPrompts.map((prompt) => (
+                        <div
+                          key={prompt.id}
+                          className="p-3 bg-muted/50 rounded-lg text-sm font-mono"
+                        >
+                          {prompt.text}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Пагинация */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+                        <span className="text-sm text-muted-foreground">
+                          Страница {promptsPage + 1} из {totalPages}
+                        </span>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setPromptsPage(p => Math.max(0, p - 1))}
+                            disabled={promptsPage === 0}
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setPromptsPage(p => Math.min(totalPages - 1, p + 1))}
+                            disabled={promptsPage === totalPages - 1}
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
         ) : (
           // Empty state

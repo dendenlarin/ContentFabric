@@ -1,5 +1,7 @@
-import { IsString, IsArray, IsOptional } from 'class-validator';
+import { IsString, IsArray, IsOptional, ValidateNested } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { EmbeddedParameterDto } from './create-prompt-template.dto';
 
 export class UpdatePromptTemplateDto {
   @ApiPropertyOptional({
@@ -26,4 +28,14 @@ export class UpdatePromptTemplateDto {
   @IsArray()
   @IsString({ each: true })
   parameterIds?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Встроенные параметры для обновления вместе с шаблоном',
+    type: [EmbeddedParameterDto],
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => EmbeddedParameterDto)
+  embeddedParameters?: EmbeddedParameterDto[];
 }
