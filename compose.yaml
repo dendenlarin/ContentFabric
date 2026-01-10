@@ -1,4 +1,5 @@
 services:
+  # === ИНФРАСТРУКТУРА ===
   mongodb:
     image: mongo:7
     container_name: content-fabric-mongo
@@ -8,6 +9,11 @@ services:
       - mongodb_data:/data/db
     environment:
       MONGO_INITDB_DATABASE: content_fabric
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -16,20 +22,62 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  mongo-express:
-    image: mongo-express:latest
-    container_name: content-fabric-mongo-admin
+  # === ПРИЛОЖЕНИЯ ===
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile.dev
+    container_name: content-fabric-backend
     ports:
-      - "8081:8081"
+      - "3001:3001"
     environment:
-      ME_CONFIG_MONGODB_SERVER: mongodb
-      ME_CONFIG_MONGODB_PORT: "27017"
-      ME_CONFIG_BASICAUTH_USERNAME: admin
-      ME_CONFIG_BASICAUTH_PASSWORD: admin123
-      ME_CONFIG_MONGODB_ENABLE_ADMIN: "true"
+      - NODE_ENV=development
+      - PORT=3001
+      - MONGODB_URI=mongodb://mongodb:27017/content_fabric
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      # Монтируем исходники для hot-reload
+      - ./apps/backend/src:/app/apps/backend/src:delegated
+      - ./apps/backend/nest-cli.json:/app/apps/backend/nest-cli.json:ro
+      - ./apps/backend/tsconfig.json:/app/apps/backend/tsconfig.json:ro
+      # Shared пакет для синхронизации типов
+      - ./packages/shared/src:/app/packages/shared/src:delegated
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile.dev
+    container_name: content-fabric-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true
+    volumes:
+      # Монтируем исходники для hot-reload
+      - ./apps/frontend/src:/app/apps/frontend/src:delegated
+      - ./apps/frontend/public:/app/apps/frontend/public:delegated
+      - ./apps/frontend/next.config.js:/app/apps/frontend/next.config.js:ro
+      - ./apps/frontend/tsconfig.json:/app/apps/frontend/tsconfig.json:ro
+      - ./apps/frontend/tailwind.config.js:/app/apps/frontend/tailwind.config.js:ro
+      - ./apps/frontend/postcss.config.js:/app/apps/frontend/postcss.config.js:ro
+      # Shared пакет
+      - ./packages/shared/src:/app/packages/shared/src:delegated
+    depends_on:
+      - backend
     restart: unless-stopped
 
   admin:
@@ -44,7 +92,25 @@ services:
       REDIS_PORT: "6379"
       PORT: "3002"
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # === ИНСТРУМЕНТЫ ===
+  mongo-express:
+    image: mongo-express:latest
+    container_name: content-fabric-mongo-admin
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_MONGODB_PORT: "27017"
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin123
+      ME_CONFIG_MONGODB_ENABLE_ADMIN: "true"
+    depends_on:
+      mongodb:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

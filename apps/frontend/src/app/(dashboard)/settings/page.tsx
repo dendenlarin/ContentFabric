@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Save, Key, Cpu, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { Button, Input, Select, Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
+import { Save, Key, Cpu } from 'lucide-react';
+import { Button, Input, Select, Card, CardHeader, CardTitle, CardContent, Alert } from '@/components/ui';
 
 /**
  * Страница настроек приложения
@@ -75,19 +75,15 @@ export default function SettingsPage() {
 
       {/* Сообщения */}
       {error && (
-        <div className="flex items-center gap-2 p-4 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          <span>{error}</span>
-          <button onClick={() => setError(null)} className="ml-auto">×</button>
-        </div>
+        <Alert variant="error" onClose={() => setError(null)}>
+          {error}
+        </Alert>
       )}
 
       {success && (
-        <div className="flex items-center gap-2 p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700">
-          <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-          <span>{success}</span>
-          <button onClick={() => setSuccess(null)} className="ml-auto">×</button>
-        </div>
+        <Alert variant="success" onClose={() => setSuccess(null)}>
+          {success}
+        </Alert>
       )}
 
       {/* API ключи */}

@@ -1,0 +1,34 @@
+# Node modules
+**/node_modules
+
+# Build outputs
+**/dist
+**/.next
+**/build
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment (кроме примеров)
+.env
+.env.*
+!.env.example
+
+# Test coverage
+coverage
+.nyc_output
