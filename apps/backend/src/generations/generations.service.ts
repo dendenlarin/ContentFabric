@@ -61,7 +61,7 @@ export class GenerationsService {
     }
 
     // Обновляем статус
-    generation.status = GenerationStatus.PROCESSING;
+    generation.status = GenerationStatus.RUNNING;
     await generation.save();
 
     // Получаем тексты промптов

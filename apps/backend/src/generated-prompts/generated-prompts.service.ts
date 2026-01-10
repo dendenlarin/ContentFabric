@@ -28,12 +28,14 @@ export class GeneratedPromptsService {
 
   // Генерация всех комбинаций промптов для шаблонов
   async generate(dto: GeneratePromptsDto): Promise<GenerateResult> {
-    const templates = await this.promptTemplatesService.findByIds(dto.templateIds);
+    // Удаляем дубликаты, т.к. $in возвращает каждый документ только один раз
+    const uniqueTemplateIds = [...new Set(dto.templateIds)];
+    const templates = await this.promptTemplatesService.findByIds(uniqueTemplateIds);
 
     // Проверяем, что все запрошенные шаблоны найдены
-    if (templates.length !== dto.templateIds.length) {
+    if (templates.length !== uniqueTemplateIds.length) {
       const foundIds = templates.map((t) => t._id.toString());
-      const missingIds = dto.templateIds.filter((id) => !foundIds.includes(id));
+      const missingIds = uniqueTemplateIds.filter((id) => !foundIds.includes(id));
       throw new NotFoundException(`Шаблоны не найдены: ${missingIds.join(', ')}`);
     }
 
