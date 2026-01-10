@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Play, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { Button, Input, Select, Card, CardHeader, CardTitle, CardContent, Badge, ProgressBar } from '@/components/ui';
+import { Play, Sparkles } from 'lucide-react';
+import { Button, Input, Select, Card, CardHeader, CardTitle, CardContent, ProgressBar, Alert, StatusBadge } from '@/components/ui';
 import {
   Generation,
   PromptTemplate,
@@ -174,20 +174,6 @@ export default function GenerationsPage() {
     }
   };
 
-  // Статус генерации
-  const getStatusBadge = (status: Generation['status']) => {
-    switch (status) {
-      case 'pending':
-        return <Badge variant="default">Ожидание</Badge>;
-      case 'running':
-        return <Badge variant="info">Выполняется</Badge>;
-      case 'completed':
-        return <Badge variant="success">Завершено</Badge>;
-      case 'failed':
-        return <Badge variant="error">Ошибка</Badge>;
-    }
-  };
-
   // Активные генерации (running или pending)
   const activeGenerations = generations.filter(
     (g) => g.status === 'running' || g.status === 'pending'
@@ -204,19 +190,15 @@ export default function GenerationsPage() {
 
       {/* Сообщения */}
       {error && (
-        <div className="flex items-center gap-2 p-4 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          <span>{error}</span>
-          <button onClick={() => setError(null)} className="ml-auto">×</button>
-        </div>
+        <Alert variant="error" onClose={() => setError(null)}>
+          {error}
+        </Alert>
       )}
 
       {success && (
-        <div className="flex items-center gap-2 p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700">
-          <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-          <span>{success}</span>
-          <button onClick={() => setSuccess(null)} className="ml-auto">×</button>
-        </div>
+        <Alert variant="success" onClose={() => setSuccess(null)}>
+          {success}
+        </Alert>
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -340,11 +322,15 @@ export default function GenerationsPage() {
                           {gen.provider} / {gen.modelId}
                         </p>
                       </div>
-                      {getStatusBadge(gen.status)}
+                      <StatusBadge status={gen.status} />
                     </div>
-                    <ProgressBar value={gen.progress} showLabel size="sm" />
+                    <ProgressBar
+                      value={gen.tasks?.length ? (gen.tasks.filter(t => t.status === 'completed').length / gen.tasks.length) * 100 : 0}
+                      showLabel
+                      size="sm"
+                    />
                     <p className="text-xs text-muted-foreground mt-2">
-                      {gen.prompts.length} промптов
+                      {gen.tasks?.length ?? 0} задач
                     </p>
                   </CardContent>
                 </Card>

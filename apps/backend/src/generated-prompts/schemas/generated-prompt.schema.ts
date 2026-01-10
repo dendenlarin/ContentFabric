@@ -22,6 +22,16 @@ export class ParameterValue {
         delete ret._id;
       }
       if (ret.templateId) ret.templateId = (ret.templateId as { toString(): string }).toString();
+      // Трансформация ParameterValue[] в Record<string, string> для frontend
+      if (ret.parameterValues && Array.isArray(ret.parameterValues)) {
+        ret.parameterValues = (ret.parameterValues as ParameterValue[]).reduce(
+          (acc, pv) => {
+            acc[pv.name] = pv.value;
+            return acc;
+          },
+          {} as Record<string, string>,
+        );
+      }
       delete ret.__v;
       return ret;
     },

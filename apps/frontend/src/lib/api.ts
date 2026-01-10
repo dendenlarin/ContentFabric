@@ -1,8 +1,29 @@
+import {
+  ParameterResponse,
+  PromptTemplateResponse,
+  GeneratedPromptResponse,
+  GenerationTaskResponse,
+  GenerationResponse,
+  GenerationResultResponse,
+  EmbeddedParameter,
+  GenerationStatus,
+  TaskStatus,
+} from '@content-fabric/shared';
+
+// Реэкспорт типов для совместимости с существующим кодом
+export type Parameter = ParameterResponse;
+export type PromptTemplate = PromptTemplateResponse;
+export type GeneratedPrompt = GeneratedPromptResponse;
+export type GenerationTask = GenerationTaskResponse;
+export type Generation = GenerationResponse;
+export type GenerationResult = GenerationResultResponse;
+export type { EmbeddedParameter, GenerationStatus, TaskStatus };
+
 /**
  * Базовый URL для API запросов
  * Backend работает на порту 3001
  */
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 /**
  * Обертка для fetch с базовым URL и обработкой ошибок
@@ -27,55 +48,6 @@ export async function apiFetch<T>(
   }
 
   return response.json();
-}
-
-// === Типы данных ===
-
-export interface Parameter {
-  id: string;
-  name: string;
-  values: string[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface PromptTemplate {
-  id: string;
-  name: string;
-  template: string;
-  parameters: Parameter[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface GeneratedPrompt {
-  id: string;
-  text: string;
-  parameterValues: Record<string, string>;
-  templateId: string;
-  template?: PromptTemplate;
-  createdAt: string;
-}
-
-export interface Generation {
-  id: string;
-  name: string;
-  status: 'pending' | 'running' | 'completed' | 'failed';
-  progress: number;
-  modelId: string;
-  provider: string;
-  prompts: GeneratedPrompt[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface GenerationResult {
-  id: string;
-  generationId: string;
-  promptId: string;
-  result: string;
-  status: 'success' | 'error';
-  createdAt: string;
 }
 
 // === API функции для параметров ===
@@ -110,11 +82,6 @@ export async function getPromptTemplates(): Promise<PromptTemplate[]> {
   return apiFetch<PromptTemplate[]>('/prompt-templates');
 }
 
-export interface EmbeddedParameter {
-  name: string;
-  values: string[];
-}
-
 export async function createPromptTemplate(data: {
   name: string;
   template: string;
@@ -123,6 +90,16 @@ export async function createPromptTemplate(data: {
 }): Promise<PromptTemplate> {
   return apiFetch<PromptTemplate>('/prompt-templates', {
     method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updatePromptTemplate(
+  id: string,
+  data: { name?: string; template?: string; embeddedParameters?: EmbeddedParameter[] }
+): Promise<PromptTemplate> {
+  return apiFetch<PromptTemplate>(`/prompt-templates/${id}`, {
+    method: 'PATCH',
     body: JSON.stringify(data),
   });
 }

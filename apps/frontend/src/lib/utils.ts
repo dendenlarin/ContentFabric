@@ -34,3 +34,32 @@ export const PLURALS = {
   value: ['значение', 'значения', 'значений'] as [string, string, string],
   parameter: ['параметр', 'параметра', 'параметров'] as [string, string, string],
 } as const;
+
+/**
+ * Форматирование даты в короткий формат (день и месяц)
+ * @param dateStr - строка даты в ISO формате
+ * @returns отформатированная дата, например "15 янв."
+ */
+export function formatDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('ru-RU', {
+    day: 'numeric',
+    month: 'short',
+  });
+}
+
+/**
+ * Форматирование даты с временем
+ * @param dateStr - строка даты в ISO формате
+ * @returns отформатированная дата со временем, например "15 янв. 2024, 14:30"
+ */
+export function formatDateTime(dateStr: string): string {
+  const date = new Date(dateStr);
+  return date.toLocaleString('ru-RU', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}

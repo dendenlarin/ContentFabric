@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Variable, AlertCircle, CheckCircle } from 'lucide-react';
+import { Variable } from 'lucide-react';
 import { ParameterList, ParameterForm } from '@/components/parameters';
+import { Alert } from '@/components/ui';
 import { Parameter, getParameters, createParameter, updateParameter, deleteParameter } from '@/lib/api';
 
 export default function ParametersPage() {
@@ -130,29 +131,15 @@ export default function ParametersPage() {
           <div className="max-w-2xl mx-auto p-6">
             {/* Сообщения */}
             {error && (
-              <div className="flex items-center gap-2 p-4 mb-6 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive">
-                <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                <span>{error}</span>
-                <button
-                  onClick={() => setError(null)}
-                  className="ml-auto text-destructive/70 hover:text-destructive text-xl leading-none"
-                >
-                  ×
-                </button>
-              </div>
+              <Alert variant="error" onClose={() => setError(null)} className="mb-6">
+                {error}
+              </Alert>
             )}
 
             {success && (
-              <div className="flex items-center gap-2 p-4 mb-6 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700">
-                <CheckCircle className="w-5 h-5 flex-shrink-0" />
-                <span>{success}</span>
-                <button
-                  onClick={() => setSuccess(null)}
-                  className="ml-auto text-emerald-500 hover:text-emerald-700 text-xl leading-none"
-                >
-                  ×
-                </button>
-              </div>
+              <Alert variant="success" onClose={() => setSuccess(null)} className="mb-6">
+                {success}
+              </Alert>
             )}
 
             <ParameterForm
