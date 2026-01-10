@@ -1,7 +1,8 @@
 // Статус генерации (Generation)
 export enum GenerationStatus {
   DRAFT = 'draft',
-  PROCESSING = 'processing',
+  PENDING = 'pending',
+  RUNNING = 'running',
   COMPLETED = 'completed',
   FAILED = 'failed',
 }

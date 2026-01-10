@@ -7,6 +7,19 @@ export interface BaseEntity {
   updatedAt: Date;
 }
 
+// Базовый тип для API Response (даты как строки после JSON сериализации)
+export interface BaseResponse {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// === EmbeddedParameter (для создания параметров вместе с шаблоном) ===
+export interface EmbeddedParameter {
+  name: string;
+  values: string[];
+}
+
 // === Parameter ===
 export interface IParameter extends BaseEntity {
   name: string;       // "gender" - ключ для {{gender}}
@@ -64,4 +77,62 @@ export interface IGenerationResult {
   promptText: string;           // Денормализация для удобства
   url: string;                  // Путь к файлу
   createdAt: Date;
+}
+
+// =============================================================================
+// API Response типы (для frontend - даты как строки после JSON сериализации)
+// =============================================================================
+
+export interface ParameterResponse {
+  id: string;
+  name: string;
+  values: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PromptTemplateResponse {
+  id: string;
+  name: string;
+  template: string;
+  parameters: ParameterResponse[];  // Populated параметры
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GeneratedPromptResponse {
+  id: string;
+  templateId: string;
+  text: string;
+  parameterValues: Record<string, string>;  // Трансформировано из ParameterValue[]
+  template?: PromptTemplateResponse;
+  createdAt: string;
+}
+
+export interface GenerationTaskResponse {
+  promptId: string;
+  status: TaskStatus;
+  resultId?: string;
+  error?: string;
+}
+
+export interface GenerationResponse {
+  id: string;
+  name: string;
+  modelId: string;
+  provider: string;
+  status: GenerationStatus;
+  tasks: GenerationTaskResponse[];
+  settings?: GenerationSettings;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GenerationResultResponse {
+  id: string;
+  generationId: string;
+  promptId: string;
+  promptText: string;
+  url: string;
+  createdAt: string;
 }

@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { History as HistoryIcon, Eye, ChevronDown, ChevronUp, Clock, Sparkles } from 'lucide-react';
-import { Button, Card, CardContent, Badge, Select, Input } from '@/components/ui';
+import { History as HistoryIcon, ChevronDown, ChevronUp, Clock, Sparkles } from 'lucide-react';
+import { Button, Card, CardContent, Badge, Select, Input, StatusBadge } from '@/components/ui';
+import { formatDateTime } from '@/lib/utils';
 import {
   Generation,
   GenerationResult,
@@ -87,32 +88,6 @@ export default function HistoryPage() {
 
     return true;
   });
-
-  // Статус badge
-  const getStatusBadge = (status: Generation['status']) => {
-    switch (status) {
-      case 'pending':
-        return <Badge variant="default">Ожидание</Badge>;
-      case 'running':
-        return <Badge variant="info">Выполняется</Badge>;
-      case 'completed':
-        return <Badge variant="success">Завершено</Badge>;
-      case 'failed':
-        return <Badge variant="error">Ошибка</Badge>;
-    }
-  };
-
-  // Форматирование даты
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleString('ru-RU', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
 
   return (
     <div className="p-6 space-y-6">
@@ -215,7 +190,7 @@ export default function HistoryPage() {
                         <span>{gen.provider} / {gen.modelId}</span>
                         <span className="flex items-center gap-1">
                           <Clock className="w-3.5 h-3.5" />
-                          {formatDate(gen.createdAt)}
+                          {formatDateTime(gen.createdAt)}
                         </span>
                       </div>
                     </div>
@@ -223,9 +198,9 @@ export default function HistoryPage() {
 
                   <div className="flex items-center gap-4">
                     <span className="text-sm text-muted-foreground">
-                      {gen.prompts.length} промптов
+                      {gen.tasks?.length ?? 0} задач
                     </span>
-                    {getStatusBadge(gen.status)}
+                    <StatusBadge status={gen.status} />
                     {expandedId === gen.id ? (
                       <ChevronUp className="w-5 h-5 text-muted-foreground" />
                     ) : (
